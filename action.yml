@@ -1,0 +1,102 @@
+name: 'Illarion versioning for docker images'
+description: 'This action creates all the version information for the docker images handled by Illarion in one go.'
+inputs:
+  image-name:
+    description: 'The name of the image, including the registry, but excluding the tag. The name will be normalized to lower case.'
+    required: false
+    default: 'ghcr.io/${{ github.repository }}'
+  latest-on-tags:
+    description: 'Set the "latest" tag on images that are build from tags.'
+    required: false
+    default: true
+  latest-on-branches:
+    description: 'Set the "latest" tag on images for branches matching this expression'
+    required: false
+    default: ''
+  registry-secret:
+    description: 'The secret that is used to push the images to the registry. This is used to check if the secret is around and set the docker-secret output.'
+    required: false
+    default: ''
+outputs:
+  version: 
+    description: "The version of the image"
+    value: ${{ steps.generate-versions.outputs.version }}
+  tags: 
+    description: "The tags that are supposed to be applied to the image"
+    value: ${{ steps.generate-versions.outputs.tags }}
+  created: 
+    description: "The creation date of the image"
+    value: ${{ steps.generate-versions.outputs.created }}
+  docker-secret: 
+    description: "The password that can be used to authenticate with the docker registry"
+    value: ${{ steps.generate-versions.outputs.docker_secret }}
+  has-docker-secret: 
+    description: "This is set to 'true' in case the secret for the docker authentication is set."
+    value: ${{ steps.generate-versions.outputs.has_docker_secret == 'true' }}
+runs:
+  using: "composite"
+  steps: 
+    - name: Generate docker versions
+      id: generate-versions
+      shell: bash
+      env:
+        IMAGE_NAME: ${{ inputs.image-name }}
+      run: |
+        DOCKER_IMAGE=${IMAGE_NAME,,}
+
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        elif [[ $GITHUB_REF == refs/heads/* ]]; then
+          VERSION=$(echo ${GITHUB_REF#refs/heads/} | sed -r 's#/+#-#g')
+        elif [[ $GITHUB_REF == refs/pull/* ]]; then
+          VERSION=pr-${{ github.event.number }}
+        fi
+
+        TAGS="${DOCKER_IMAGE}:${VERSION}"
+
+        LATEST_IS_SET=false
+        if [[ $VERSION =~ ^v*[0-9]+(\.[0-9]+)*$ ]]; then
+          LAST_VERSION=""
+          while [ "${VERSION}" != "${LAST_VERSION}" ]
+          do
+            LAST_VERSION=${VERSION}
+            VERSION=${VERSION%.*}
+            TAGS="$TAGS,${DOCKER_IMAGE}:${VERSION}"
+          done
+          if [[ "${{ inputs.latest-on-tags }}" == "true" ]]; then
+            TAGS="$TAGS,${DOCKER_IMAGE}:latest"
+            LATEST_IS_SET=true
+          fi
+        elif [ "${{ github.event_name }}" = "push" ]; then
+            TAGS="$TAGS,${DOCKER_IMAGE}:sha-${GITHUB_SHA::8}"
+        fi
+        
+        if [[ "$LATEST_IS_SET" == "false" ]]; then
+          if [ -n "${{ inputs.latest-on-branches }}" ]; then
+            if [[ $VERSION =~ "${{ inputs.latest-on-branches }}" ]]; then
+              TAGS="$TAGS,${DOCKER_IMAGE}:latest"
+              LATEST_IS_SET=true
+            fi
+          fi
+        fi
+
+        if [ -n "${{ inputs.registry-secret }}" ]; then
+          DOCKER_SECRET=${{ inputs.registry-secret }}
+        fi
+
+        if [ github.event_name != 'pull_request' ] && [ -n "${DOCKER_SECRET}" ]; then
+          HAS_SECRET=true
+        else
+          HAS_SECRET=false
+          DOCKER_SECRET=
+        fi
+
+        echo "Version: ${VERSION}"
+        echo "Tags: ${TAGS}"
+        echo "Secret available: ${HAS_SECRET}"
+
+        echo ::set-output name=version::${VERSION}
+        echo ::set-output name=tags::${TAGS}
+        echo ::set-output name=created::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+        echo ::set-output name=has_docker_secret::${HAS_SECRET}
+        echo ::set-output name=docker_secret::${DOCKER_SECRET}
