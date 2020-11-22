@@ -61,12 +61,13 @@ runs:
         LATEST_IS_SET=false
         if [[ "$VERSION_SOURCE" == "TAG" ]]; then
           if [[ $VERSION =~ ^.+\..+$ ]]; then
-            LAST_VERSION=""
+            LAST_VERSION=${VERSION}
+            VERSION=${VERSION%.*}
             while [ "${VERSION}" != "${LAST_VERSION}" ]
             do
+              TAGS="$TAGS,${DOCKER_IMAGE}:${VERSION}"
               LAST_VERSION=${VERSION}
               VERSION=${VERSION%.*}
-              TAGS="$TAGS,${DOCKER_IMAGE}:${VERSION}"
             done
           fi
           if [[ "${{ inputs.latest-on-tags }}" == "true" ]]; then
