@@ -55,7 +55,7 @@ runs:
         TAGS="${DOCKER_IMAGE}:${VERSION}"
 
         LATEST_IS_SET=false
-        if [[ $VERSION =~ ^v*[0-9]+(\.[0-9]+)*$ ]]; then
+        if [[ $VERSION =~ ^v?[0-9]+(\.[0-9]+)*$ ]]; then
           LAST_VERSION=""
           while [ "${VERSION}" != "${LAST_VERSION}" ]
           do
