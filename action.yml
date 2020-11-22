@@ -44,25 +44,31 @@ runs:
       run: |
         DOCKER_IMAGE=${IMAGE_NAME,,}
 
+        VERSION_SOURCE=?
         if [[ $GITHUB_REF == refs/tags/* ]]; then
           VERSION=${GITHUB_REF#refs/tags/}
+          VERSION_SOURCE=TAG
         elif [[ $GITHUB_REF == refs/heads/* ]]; then
           VERSION=$(echo ${GITHUB_REF#refs/heads/} | sed -r 's#/+#-#g')
+          VERSION_SOURCE=BRANCH
         elif [[ $GITHUB_REF == refs/pull/* ]]; then
           VERSION=pr-${{ github.event.number }}
+          VERSION_SOURCE=PR
         fi
 
         TAGS="${DOCKER_IMAGE}:${VERSION}"
 
         LATEST_IS_SET=false
-        if [[ $VERSION =~ ^v?[0-9]+(\.[0-9]+)*$ ]]; then
-          LAST_VERSION=""
-          while [ "${VERSION}" != "${LAST_VERSION}" ]
-          do
-            LAST_VERSION=${VERSION}
-            VERSION=${VERSION%.*}
-            TAGS="$TAGS,${DOCKER_IMAGE}:${VERSION}"
-          done
+        if [[ "$VERSION_SOURCE" == "TAG" ]]; then
+          if [[ $VERSION =~ ^.+\..+$ ]]; then
+            LAST_VERSION=""
+            while [ "${VERSION}" != "${LAST_VERSION}" ]
+            do
+              LAST_VERSION=${VERSION}
+              VERSION=${VERSION%.*}
+              TAGS="$TAGS,${DOCKER_IMAGE}:${VERSION}"
+            done
+          fi
           if [[ "${{ inputs.latest-on-tags }}" == "true" ]]; then
             TAGS="$TAGS,${DOCKER_IMAGE}:latest"
             LATEST_IS_SET=true
