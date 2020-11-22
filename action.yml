@@ -32,7 +32,7 @@ outputs:
     value: ${{ steps.generate-versions.outputs.docker_secret }}
   has-docker-secret: 
     description: "This is set to 'true' in case the secret for the docker authentication is set."
-    value: ${{ steps.generate-versions.outputs.has_docker_secret == 'true' }}
+    value: ${{ steps.generate-versions.outputs.has_docker_secret }}
 runs:
   using: "composite"
   steps: 
