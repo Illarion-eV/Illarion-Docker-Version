@@ -59,6 +59,7 @@ runs:
         TAGS="${DOCKER_IMAGE}:${VERSION}"
 
         LATEST_IS_SET=false
+        LABEL_VERSION=${VERSION}
         if [[ "$VERSION_SOURCE" == "TAG" ]]; then
           if [[ $VERSION =~ ^.+\..+$ ]]; then
             LAST_VERSION=${VERSION}
@@ -98,11 +99,11 @@ runs:
           DOCKER_SECRET=
         fi
 
-        echo "Version: ${VERSION}"
+        echo "Version: ${LABEL_VERSION}"
         echo "Tags: ${TAGS}"
         echo "Secret available: ${HAS_SECRET}"
 
-        echo ::set-output name=version::${VERSION}
+        echo ::set-output name=version::${LABEL_VERSION}
         echo ::set-output name=tags::${TAGS}
         echo ::set-output name=created::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
         echo ::set-output name=has_docker_secret::${HAS_SECRET}
