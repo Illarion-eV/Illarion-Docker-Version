@@ -15,7 +15,7 @@ jobs:
       - uses: Illarion-eV/Illarion-Docker-Version@v1
         id: docker-vars
         with:
-          registry-secret: ${{ secrets.CR_PAT }}
+          registry-secret: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### Input Variables
@@ -53,14 +53,14 @@ jobs:
       - uses: Illarion-eV/Illarion-Docker-Version@v1
         id: docker-vars
         with:
-          registry-secret: ${{ secrets.CR_PAT }}
+          registry-secret: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to GitHub
         if: ${{ steps.docker-vars.outputs.has-docker-secret }}
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
+          username: ${{ github.actor }}
           password: ${{ steps.docker-vars.outputs.docker-secret }}
 
       - name: Build and push

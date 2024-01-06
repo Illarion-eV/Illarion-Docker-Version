@@ -92,7 +92,7 @@ runs:
           DOCKER_SECRET=${{ inputs.registry-secret }}
         fi
 
-        if [ github.event_name != 'pull_request' ] && [ -n "${DOCKER_SECRET}" ]; then
+        if [ "${{ github.event_name }}" != 'pull_request' ] && [ -n "${DOCKER_SECRET}" ]; then
           HAS_SECRET=true
         else
           HAS_SECRET=false
@@ -103,8 +103,8 @@ runs:
         echo "Tags: ${TAGS}"
         echo "Secret available: ${HAS_SECRET}"
 
-        echo ::set-output name=version::${LABEL_VERSION}
-        echo ::set-output name=tags::${TAGS}
-        echo ::set-output name=created::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-        echo ::set-output name=has_docker_secret::${HAS_SECRET}
-        echo ::set-output name=docker_secret::${DOCKER_SECRET}
+        echo "version=${LABEL_VERSION}" >> $GITHUB_OUTPUT
+        echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+        echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+        echo "has_docker_secret=${HAS_SECRET}" >> $GITHUB_OUTPUT
+        echo "docker_secret=${DOCKER_SECRET}" >> $GITHUB_OUTPUT
